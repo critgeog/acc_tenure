@@ -10,7 +10,7 @@ options(tigris_use_cache = TRUE)
 #load_variables(2016, "acs5") %>% View()
 #load_variables(2010, "sf1") %>% View()
 #load_variables(2000, "sf1") %>% View()
-load_variables(1990, 'sf3') %>% View()
+#load_variables(1990, 'sf3') %>% View()
 
 # Athens-Clarke County homeownership, 2012-16 ACS
 acc16 <- get_acs(geography = "county",
@@ -107,3 +107,7 @@ acc90 <- get_decennial(geography = "county",
   mutate(hopct90 = round(100 * (ownocc90/tothu90), 1),
          hopct2 = round(100 * (ownocc90/occ90), 1))
 
+tm_shape(acc16) +
+  tm_fill("hopct2",title = '2012-16 ACS', palette = "Blues")
+
+fivenum(acc16$hopct2)

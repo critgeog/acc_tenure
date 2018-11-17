@@ -1,8 +1,6 @@
 # homeownership in Athens-Clarke County for Claire Bolton
 # created: October 23, 2018
-# Taylor
-
-# load necessary libraries
+# last updated: November 17, 2018
 
 library(tidyverse)
 library(tidycensus)
@@ -114,34 +112,62 @@ acc90t <- get_decennial(geography = "tract",
 
 # acc_1980 <- read_csv("../ct_ga80.csv")
 
-tm_shape(acc90t) +
-  tm_fill("hopct2", breaks = c(0, 10, 30, 60, 80, 100),
-          title = '1990')
+# maps
+rds <- roads('GA', 'Clarke')
 
-tm_shape(acc00t) +
+ct90 <- tm_shape(acc90t) +
   tm_fill("hopct2", breaks = c(0, 10, 30, 60, 80, 100),
-        title = '2000')
+          title = 'Census Tract, Homeownership Rate', palette = "Blues") +
+  tm_layout(title = 'Athens-Clarke County \n1990',
+            legend.title.size = .8) +
+  tm_shape(rds) + 
+  tm_lines(col = 'black', alpha = .2)
 
-tm_shape(acc10t) +
+ct00 <- tm_shape(acc00t) +
   tm_fill("hopct2", breaks = c(0, 10, 30, 60, 80, 100),
-          title = '2010')
+          title = 'Census Tract, Homeownership Rate', palette = "Blues") +
+  tm_layout(title = 'Athens-Clarke County \n2000',
+            legend.title.size = .8) +
+  tm_shape(rds) + 
+  tm_lines(col = 'black', alpha = .2)
 
-tm_shape(acc16t) +
+ct10 <- tm_shape(acc10t) +
   tm_fill("hopct2", breaks = c(0, 10, 30, 60, 80, 100),
-          title = '2012-16 ACS')
+          title = 'Census Tract, Homeownership Rate', palette = "Blues") +
+  tm_layout(title = 'Athens-Clarke County \n2010',
+            legend.title.size = .8) +
+  tm_shape(rds) + 
+  tm_lines(col = 'black', alpha = .2)
 
+ct16 <- tm_shape(acc16t) +
+  tm_fill("hopct2", breaks = c(0, 10, 30, 60, 80, 100),
+          title = 'Census Tract, Homeownership Rate', palette = "Blues") +
+  tm_layout(title = 'Athens-Clarke County \n2012-16 ACS',
+            legend.title.size = .8) +
+  tm_shape(rds) + 
+  tm_lines(col = 'black', alpha = .2)
+
+# read in 1970 and 1980 census tracts from NHGIS
 acc_1980 <- read_csv("../ct_ga80.csv")
 
 acc_1980sf <- read_sf("../nhgis0065_shape/nhgis0065_shapefile_tl2000_us_tract_1980/US_tract_1980.shp") %>%
   filter(NHGISST == 130,
-         NHGISCTY == '0590')
+         NHGISCTY == '0590') %>%
+  st_transform(4269)
+
+# acc90b <- acc1990b %>%
+#   st_transform(4269)
 
 acc_1980d <- inner_join(acc_1980sf, acc_1980, by = "GISJOIN") %>%
   mutate(ho_pct = C7W001/(C7W001+C7W002)*100)
 
-tm_shape(acc_1980d) +
+ct80 <- tm_shape(acc_1980d) +
   tm_polygons("ho_pct", breaks = c(0, 10, 30, 60, 80, 100),
-              title = '1980, tracts')
+              title = 'Census Tract, Homeownership Rate', palette = "Blues") +
+  tm_layout(title = 'Athens-Clarke County \n1980',
+            legend.title.size = .8) +
+  tm_shape(rds) + 
+  tm_lines(col = 'black', alpha = .2)
 
 ##
 
@@ -149,21 +175,44 @@ acc_1970 <- read_csv("../ct_ga70.csv")
 
 acc_1970sf <- read_sf("../nhgis0065_shape/nhgis0065_shapefile_tl2008_us_tract_1970") %>%
   filter(NHGISST == 130,
-         NHGISCTY == '0590')
+         NHGISCTY == '0590') %>%
+  st_transform(4269)
 
 acc_1970d <- inner_join(acc_1970sf, acc_1970, by = "GISJOIN") %>%
   mutate(ho_pct = CFA001/(CFA001 + CFA003)*100)
 
-# need to identify homeownership variable and total hu variable
-# need to create homeownership rate variable.
 tm_shape(acc_1970d) +
   tm_polygons("ho_pct", breaks = c(0, 10, 30, 60, 80, 100),
-              title = '1970, tracts')
+              title = 'Census Tract, Homeownership Rate', palette = "Blues",
+              border.col = 'black')
 
+ct70 <- tm_shape(acc_1970d) +
+  tm_polygons("ho_pct", breaks = c(0, 10, 30, 60, 80, 100),
+              title = 'Census Tract, Homeownership Rate', palette = "Blues",
+              border.alpha = .3) +
+  tm_borders(col = 'black') +
+  tm_layout(title = 'Athens-Clarke County \n1970',
+            legend.title.size = .8) +
+  tm_shape(rds) + 
+  tm_lines(col = 'black', alpha = .2)
+ct70
 
+ct16
+save_tmap(ct70, "maps/ct70.png")
+save_tmap(ct80, "maps/ct80.png")
+save_tmap(ct90, "maps/ct90.png")
+save_tmap(ct00, "maps/ct00.png")
+save_tmap(ct10, "maps/ct10.png")
+save_tmap(ct16, "maps/ct16.png")
 
+acc16t %>%
+  summarize(mean = mean(hopct2),
+            median = median(hopct2),
+            min = min(hopct2),
+            max = max(hopct2))
 
-
+boxplot(acc90t$hopct2)
+boxplot(acc_1970d$ho_pct)
 # need to work on this and below
 
 smlcounty <- st_join(sml10, sml16) %>%
