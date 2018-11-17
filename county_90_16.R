@@ -9,8 +9,8 @@ options(tigris_use_cache = TRUE)
 
 #load_variables(2016, "acs5") %>% View()
 #load_variables(2010, "sf1") %>% View()
-load_variables(2000, "sf1") %>% View()
-#load_variables(1990, "sf1") %>% View()
+#load_variables(2000, "sf1") %>% View()
+load_variables(1990, 'sf3') %>% View()
 
 # Athens-Clarke County homeownership, 2012-16 ACS
 acc16 <- get_acs(geography = "county",
@@ -33,24 +33,24 @@ acc16 <- get_acs(geography = "county",
          occpct16 = round(100 * (totocc16/tothu16), 1))
 
 # Athens-Clarke County homeownership, 2006-10 ACS; this number is higher than 2010 Census (higher number is 06-09)
-acc10co <- get_acs(geography = "county",
-                  county = 'Clarke',
-                  state = 'GA',
-                  variables = c('B25001_001E',
-                                'B25002_002E',
-                                'B25003_001E',
-                                'B25003_002E'),
-                  survey = "acs5",
-                  geometry = TRUE,
-                  year = 2010,
-                  output = 'wide') %>%
-  rename(tothu10 = 'B25001_001E',
-         totocc10 = 'B25002_002E',
-         tentot10 = 'B25003_001E',
-         ownocc10 = 'B25003_002E')  %>%
-  mutate(hopct10 = round(100 * (ownocc10/tothu10), 1),
-         hopct2 = round(100 * (ownocc10/tentot10),1),
-         occpct10 = round(100 * (totocc10/tothu10), 1))
+# acc10co <- get_acs(geography = "county",
+#                   county = 'Clarke',
+#                   state = 'GA',
+#                   variables = c('B25001_001E',
+#                                 'B25002_002E',
+#                                 'B25003_001E',
+#                                 'B25003_002E'),
+#                   survey = "acs5",
+#                   geometry = TRUE,
+#                   year = 2010,
+#                   output = 'wide') %>%
+#   rename(tothu10 = 'B25001_001E',
+#          totocc10 = 'B25002_002E',
+#          tentot10 = 'B25003_001E',
+#          ownocc10 = 'B25003_002E')  %>%
+#   mutate(hopct10 = round(100 * (ownocc10/tothu10), 1),
+#          hopct2 = round(100 * (ownocc10/tentot10),1),
+#          occpct10 = round(100 * (totocc10/tothu10), 1))
 
 # Athens-Clarke County homeownership, 2010 decennial census
 acc10 <- get_decennial(geography = "county",
@@ -105,5 +105,5 @@ acc90 <- get_decennial(geography = "county",
          ownocc90 = 'H0030001',
          occ90 = 'H0020001') %>%
   mutate(hopct90 = round(100 * (ownocc90/tothu90), 1),
-         hopct2 = round(100 * ownocc90/occ90), 1)
+         hopct2 = round(100 * (ownocc90/occ90), 1))
 

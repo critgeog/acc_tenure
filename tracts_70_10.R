@@ -6,20 +6,11 @@
 
 library(tidyverse)
 library(tidycensus)
-#library(magrittr)
-#library(stringr)
 library(tigris)
-#library(viridis)
 library(sf)
-#library(sp)
-#library(rgdal)
 library(tmap)
 library(tmaptools)
 library(ggplot2)
-#library(janitor)
-#library(maptools)
-#library(htmlwidgets)
-#library(leaflet)
 options(tigris_use_cache = TRUE)
 
 #th_api_acs <- '45544f0d114cfaa037a5566745d18bb8d4778cfa'
@@ -34,91 +25,110 @@ options(tigris_use_cache = TRUE)
 # Specifically, the national trend is that it went down significantly post-Recession, 
 # and folks want to know these figures for Athens Clarke County.
 
-# It would be great to have the most detail possible, e.g. block groups. Maps and summary of trends very helpful.
+# It would be great to have the most detail possible, e.g. block groups.
+# Maps and summary of trends very helpful.
 
-# How hard is it to get data from different periods, e.g. the late 1960s or 1970s? On this question
+# How hard is it to get data from different periods, e.g. the late 1960s or 1970s? 
+# On this question
 
-#I can get it for each of the  decennial census years. Data from 1960,70, 80 is available at the census tract (although census tracts were much larger then). From 1990 on I think it is available at block group level. starting in 2005 I can annual estimates
+#I can get it for each of the  decennial census years. 
+# Data from 1960,70, 80 is available at the census tract 
+# (although census tracts were much larger then). 
+# From 1990 on I think it is available at block group level. 
+# starting in 2005 I can annual estimates
 
-
-county10 <- get_acs(geography = "tract",
-                    county = 'Clarke',
-                    state = 'GA',
-                    variables = c("B19013_001E",
-                                  'B25001_001E',
-                                  'B25002_002E',
-                                  'B25002_003E',
-                                  'B25003_001E',
-                                  'B25003_002E',
-                                  'B25003_003E'),
-                    survey = "acs5",
-                    year = 2010,
-                    output = 'wide') %>%
-  rename(hhincome10 = "B19013_001E",
-         tothu10 = 'B25001_001E',
-         totocc10 = 'B25002_002E',
-         totvac10 = 'B25002_003E',
-         tottenure10 = 'B25003_001E',
-         ownocc10 = 'B25003_002E',
-         rentocc10 = 'B25003_003E')  %>%
-  mutate(hopct10 = round(100 * (ownocc10/tothu10), 1),
-         rntpct10 = round(100 * (rentocc10/tothu10), 1),
-         occpct10 = round(100 * (totocc10/tothu10), 1),
-         vacpct10 = round(100 * (totvac10/tothu10), 1))
-
-county16 <- get_acs(geography = "tract",
-                    county = 'Clarke',
-                    state = 'GA',
-                    variables = c("B19013_001E",'B25001_001E','B25002_002E',
-                                  'B25002_003E','B25003_001E','B25003_002E',
-                                  'B25003_003E'),
-                    survey = "acs5",
-                    output = 'wide') %>%
-  rename(hhincome16 = "B19013_001E",
-         tothu16 = 'B25001_001E',
+# Athens-Clarke County homeownership, 2012-16 ACS
+acc16t <- get_acs(geography = "tract",
+                  county = 'Clarke',
+                  state = 'GA',
+                  variables = c('B25001_001E',
+                                'B25002_002E',
+                                'B25003_001E',
+                                'B25003_002E'),
+                  survey = "acs5",
+                  year = 2016,
+                  geometry = TRUE,
+                  output = 'wide') %>%
+  rename(tothu16 = 'B25001_001E',
          totocc16 = 'B25002_002E',
-         totvac16 = 'B25002_003E',
-         tottenure16 = 'B25003_001E',
-         ownocc16 = 'B25003_002E',
-         rentocc16 = 'B25003_003E') %>%
+         tentot16 = 'B25003_001E',
+         ownocc16 = 'B25003_002E') %>%
   mutate(hopct16 = round(100 * (ownocc16/tothu16),1),
-         rntpct16 = round(100 * (rentocc16/tothu16),1),
-         occpct16 = round(100 * (totocc16/tothu16), 1),
-         vacpct16 = round(100 * (totvac16/tothu16), 1))
+         hopct2 = round(100 * (ownocc16/tentot16),1),
+         occpct16 = round(100 * (totocc16/tothu16), 1))
 
-
-load_variables(year = 2000, dataset = "sf1") %>% View
-
-?get_decennial
-
-county00 <- get_decennial(geography = "tract",
+# Athens-Clarke County homeownership, 2010 decennial census
+acc10t <- get_decennial(geography = "tract",
                     county = 'Clarke',
                     state = 'GA',
-                    variables = c('H004001',
+                  variables = c('H00010001',
+                                'H0040001',
+                                'H0040002',
+                                'H0040003'),
+                  geometry = TRUE,
+                  year = 2010,
+                  output = 'wide') %>%
+  rename(tothu10 = 'H00010001',
+         tentot10 = 'H0040001',
+         ownfree10 = 'H0040003',
+         ownmort10 = 'H0040002')  %>%
+  mutate(hopct10 = round(100 * ((ownfree10+ownmort10)/tothu10), 1),
+         hopct2 = round(100 * ((ownfree10+ownmort10)/tentot10),1))
+
+#load_variables(year = 2000, dataset = "sf1") %>% View
+
+# Athens-Clarke County homeownership, 2000 Decennial census
+acc00t <- get_decennial(geography = "tract",
+                    county = 'Clarke',
+                    state = 'GA',
+                    variables = c('H001001',
+                                  'H004001',
                                   'H004002',
                                   'H004003'),
                     year = 2000,
+                    geometry = TRUE,
                     output = 'wide') %>%
-  rename(tothu00 = 'H004001',
+  rename(tothu00 = 'H001001',
+         totten00 = 'H004001', 
          ownocc00 = 'H004002',
          rentocc00 = 'H004003')  %>%
-  mutate(hopct00 = round(100 * (ownocc00/tothu00), 1),
-         rntpct00 = round(100 * (rentocc00/tothu00), 1))
+  mutate(hopct00 = round(100 * (ownocc00/tothu00), 2),
+         hopct2 = round(100 * (ownocc00/totten00), 2),
+         rntpct00 = round(100 * (rentocc00/tothu00), 2))
 
-county90 <- get_decennial(geography = "tract",
-                          county = 'Clarke',
-                          state = 'GA',
-                          variables = c('H0010001',
-                                        'H0030001',
-                                        'H0030002'),
-                          year = 1990,
-                          output = 'wide') %>%
+
+acc90t <- get_decennial(geography = "tract",
+                        variables = c('H0010001',
+                                      'H0030001',
+                                      'H0020001'),
+                        year = 1990,
+                        county = 'Clarke',
+                        state = 'GA',
+                        geometry = TRUE,
+                        output = 'wide') %>%
   rename(tothu90 = 'H0010001',
          ownocc90 = 'H0030001',
-         rentocc90 = 'H0030002')  %>%
+         occ90 = 'H0020001') %>%
   mutate(hopct90 = round(100 * (ownocc90/tothu90), 1),
-         rntpct90 = round(100 * (rentocc90/tothu90), 1))
+         hopct2 = round(100 * (ownocc90/occ90), 1))
 
+# acc_1980 <- read_csv("../ct_ga80.csv")
+
+tm_shape(acc90t) +
+  tm_fill("hopct2", breaks = c(0, 10, 30, 60, 80, 100),
+          title = '1990')
+
+tm_shape(acc00t) +
+  tm_fill("hopct2", breaks = c(0, 10, 30, 60, 80, 100),
+        title = '2000')
+
+tm_shape(acc10t) +
+  tm_fill("hopct2", breaks = c(0, 10, 30, 60, 80, 100),
+          title = '2010')
+
+tm_shape(acc16t) +
+  tm_fill("hopct2", breaks = c(0, 10, 30, 60, 80, 100),
+          title = '2012-16 ACS')
 
 acc_1980 <- read_csv("../ct_ga80.csv")
 
@@ -126,8 +136,12 @@ acc_1980sf <- read_sf("../nhgis0065_shape/nhgis0065_shapefile_tl2000_us_tract_19
   filter(NHGISST == 130,
          NHGISCTY == '0590')
 
-tm_shape(acc_1980sf) +
-  tm_borders()
+acc_1980d <- inner_join(acc_1980sf, acc_1980, by = "GISJOIN") %>%
+  mutate(ho_pct = C7W001/(C7W001+C7W002)*100)
+
+tm_shape(acc_1980d) +
+  tm_polygons("ho_pct", breaks = c(0, 10, 30, 60, 80, 100),
+              title = '1980, tracts')
 
 ##
 
@@ -137,52 +151,26 @@ acc_1970sf <- read_sf("../nhgis0065_shape/nhgis0065_shapefile_tl2008_us_tract_19
   filter(NHGISST == 130,
          NHGISCTY == '0590')
 
-tm_shape(acc_1970sf) +
-  tm_borders()
+acc_1970d <- inner_join(acc_1970sf, acc_1970, by = "GISJOIN") %>%
+  mutate(ho_pct = CFA001/(CFA001 + CFA003)*100)
+
+# need to identify homeownership variable and total hu variable
+# need to create homeownership rate variable.
+tm_shape(acc_1970d) +
+  tm_polygons("ho_pct", breaks = c(0, 10, 30, 60, 80, 100),
+              title = '1970, tracts')
 
 
 
 
 
+# need to work on this and below
 
-
-county16 <- county16 %>%
-  mutate(state = str_sub(GEOID,1,2))
-
-
-
-
-
-
-
-
-
-# EDA
-county16 %>%
-  filter(state == c(13, 38, 14,19, 23)) %>%
-  ggplot() +
-  geom_point(mapping = aes(x = hhincome16, y = hopct16, color = state))
-
-sml16 <- county16 %>%
-  arrange(hopct16) %>%
-  select(GEOID, hhincome16, hopct16)
-
-sml10 <- county10 %>%
-  arrange(hopct10) %>%
-  select(GEOID, hhincome10, hopct10)
-
-county10 %>%
-  filter(hopct10 < 60)
-county16 %>%
-  filter(hopct16 < 55)
-
-smlcounty <- inner_join(county10, county16, by = "GEOID") %>%
+smlcounty <- st_join(sml10, sml16) %>%
   mutate(pctchange = round(100 * ((hopct16 - hopct10) / hopct10), 1),
          diff = hopct16 - hopct10,
          owndiff = ownocc16 - ownocc10) %>%
-  filter(GEOID != "41980") %>%
   mutate(type = case_when(
-    GEOID == "13059" ~ "Athens", 
     pctchange < 0 ~ "decline", 
     pctchange > 0 ~ "growth",
     diff < 0 ~ "d decline", 
@@ -191,200 +179,7 @@ smlcounty <- inner_join(county10, county16, by = "GEOID") %>%
 
 
 ggplot(smlcounty) +
-  geom_boxplot(mapping = aes(x = hopct16, y = diff, color = state))
+  geom_boxplot(mapping = aes(x = hopct16, y = diff, color = GEOID.x))
 
 ggplot(data = smlcounty) + 
-  geom_boxplot(mapping = aes(x = pctchange, y = hopct16, color = state))
-
-
-smlcounty %>%
-  arrange(owndiff) %>%
-  select(GEOID, NAME.x, owndiff, ownocc16, diff, hhincome16, hopct16, hopct10) %>%
-  print(n = 40)
-
-smlcounty %>%
-  arrange(pctchange) %>%
-  select(GEOID, pctchange, diff, hhincome16, hopct16, hopct10, NAME.x) %>%
-  print(n = 40)
-
-summary(smlcounty$owndiff)
-summary(smlcounty$tothu16)
-
-
-
-
-
-# Atlanta below
-df_acs16 <- get_acs(geography = "tract",
-                    county = c("Fulton","DeKalb","Gwinnett","Cherokee",
-                               "Cobb","Douglas","Fayette","Clayton","Henry","Rockdale"),
-                    state = "GA",
-                    variables = c("B19013_001E",'B25001_001E','B25002_002E',
-                                  'B25002_003E','B25003_001E','B25003_002E',
-                                  'B25003_003E'),
-                    survey = "acs5",
-                    output = 'wide') %>%
-  rename(hhincome16 = "B19013_001E",
-         tothu16 = 'B25001_001E',
-         totocc16 = 'B25002_002E',
-         totvac16 = 'B25002_003E',
-         tottenure16 = 'B25003_001E',
-         ownocc16 = 'B25003_002E',
-         rentocc16 = 'B25003_003E') %>%
-  mutate(hopct16 = round(100 * (ownocc16/tothu16),1),
-         rntpct16 = round(100 * rentocc16/tothu16),1,
-         occpct16 = round(100 * totocc16/tothu16), 1,
-         vacpct16 = round(100 * totvac16/tothu16), 1)
-
-
-
-
-
-
-
-
-
-# St. Louis County
-
-il2 <- get_acs(geography = "tract", 
-               variables = c(hhincome = "B19013_001"), 
-               state = "IL", 
-               geometry = TRUE) %>%
-  st_transform(4326)
-
-
-county10 <- get_acs(geography = "tract",
-                    variables = c("B19013_001E",
-                                  'B25001_001E',
-                                  'B25002_002E',
-                                  'B25002_003E',
-                                  'B25003_001E',
-                                  'B25003_002E',
-                                  'B25003_003E',
-                                  'B02001_001E',
-                                  'B02001_002E',
-                                  'B02001_003E'),
-                    county = "189",
-                    state = "MO",
-                    survey = "acs5",
-                    year = 2010,
-                    output = 'wide') %>%
-  rename(hhincome10 = "B19013_001E",
-         tothu10 = 'B25001_001E',
-         totocc10 = 'B25002_002E',
-         totvac10 = 'B25002_003E',
-         tottenure10 = 'B25003_001E',
-         ownocc10 = 'B25003_002E',
-         rentocc10 = 'B25003_003E',
-         tpop10 = 'B02001_001E',
-         white10 = 'B02001_002E',
-         black10 = 'B02001_003E')  %>%
-  mutate(hopct10 = round(100 * (ownocc10/tothu10),1),
-         rntpct10 = round(100 * (rentocc10/tothu10),1),
-         occpct10 = round(100 * (totocc10/tothu10), 1),
-         vacpct10 = round(100 * (totvac10/tothu10), 1),
-         whtpct10 = round(100 * (white10/tpop10), 1),
-         blkpct10 = round(100 * (black10/tpop10), 1))
-
-
-# race, housing tenure, housing occupancy
-county16 <- get_acs(geography = "tract", 
-                    variables = c("B19013_001E",'B25001_001E','B25002_002E',
-                                  'B25002_003E','B25003_001E','B25003_002E',
-                                  'B25003_003E',  'B02001_001E',
-                                  'B02001_002E',
-                                  'B02001_003E',
-                                  'B17001_001E',
-                                  'B17001_002E'),
-                    county = "189",
-                    state = "MO",
-                    survey = "acs5",
-                    output = 'wide') %>%
-  rename(hhincome16 = "B19013_001E",
-         tothu16 = 'B25001_001E',
-         totocc16 = 'B25002_002E',
-         totvac16 = 'B25002_003E',
-         tottenure16 = 'B25003_001E',
-         ownocc16 = 'B25003_002E',
-         rentocc16 = 'B25003_003E',
-         tpop16 = 'B02001_001E',
-         white16 = 'B02001_002E',
-         black16 = 'B02001_003E',
-         tpov16 = 'B17001_001E',
-         ipov16 = 'B17001_002E') %>%
-  mutate(hopct16 = round(100 * (ownocc16/tothu16),1),
-         rntpct16 = round(100 * rentocc16/tothu16),1,
-         occpct16 = round(100 * totocc16/tothu16), 1,
-         vacpct16 = round(100 * totvac16/tothu16), 1,
-         whtpct16 = round(100 * (white16/tpop16), 1),
-         blkpct16 = round(100 * (black16/tpop16), 1),
-         povrt16 = round(100 * (ipov16/tpov16),1))
-
-#county16 <- county16 %>%
-#  mutate(state = str_sub(GEOID,1,2))
-
-# EDA
-ggplot(county16, mapping = aes(x = blkpct16, y = hopct16)) +
-  geom_point() +
-  geom_smooth()
-
-ggplot(county16) +
-  geom_point(mapping = aes(x = blkpct16, y = povrt16))
-
-ggplot(county16, mapping = aes(x = blkpct16, y = hhincome16)) +
-  geom_point() +
-  geom_smooth()
-
-ggplot(county16, mapping = aes(x = blkpct16, y = povrt16, size = hopct16, alpha = 0.5)) +
-  geom_point()
-
-ggplot(county16) +
-  geom_point(mapping = aes(x = blkpct16, y = vacpct16))
-
-ggplot(county16, mapping = aes(x = blkpct16, y = povrt16, size = vacpct16, alpha = 0.5)) +
-  geom_point()
-
-sml16 <- county16 %>%
-  arrange(hopct16) %>%
-  select(GEOID, hhincome16, hopct16)
-
-sml10 <- county10 %>%
-  arrange(hopct10) %>%
-  select(GEOID, hhincome10, hopct10)
-
-county10 %>%
-  filter(hopct10 < 60)
-county16 %>%
-  filter(hopct16 < 55)
-
-smlcounty <- inner_join(county10, county16, by = "GEOID") %>%
-  mutate(pctchange = round(100 * ((hopct16 - hopct10) / hopct10), 1),
-         diff = hopct16 - hopct10,
-         owndiff = ownocc16 - ownocc10) %>%
-  filter(GEOID != "41980") %>%
-  mutate(type = case_when(
-    GEOID == "13059" ~ "Athens", 
-    pctchange < 0 ~ "decline", 
-    pctchange > 0 ~ "growth",
-    diff < 0 ~ "d decline", 
-    diff > 0 ~ "d growth"
-  ))
-
-ggplot(smlcounty) +
-  geom_boxplot(mapping = aes(x = hopct16, y = diff, color = state))
-
-ggplot(data = smlcounty) + 
-  geom_boxplot(mapping = aes(x = pctchange, y = hopct16, color = state))
-
-smlcounty %>%
-  arrange(owndiff) %>%
-  select(GEOID, NAME.x, owndiff, ownocc16, diff, hhincome16, hopct16, hopct10) %>%
-  print(n = 40)
-
-smlcounty %>%
-  arrange(pctchange) %>%
-  select(GEOID, pctchange, diff, hhincome16, hopct16, hopct10, NAME.x) %>%
-  print(n = 40)
-
-summary(smlcounty$owndiff)
-summary(smlcounty$tothu16)
+  geom_boxplot(mapping = aes(x = pctchange, y = hopct16, color = GEOID.x))
